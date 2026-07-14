@@ -3,40 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo 3x3</title>
+    <title>Bingos 3x3</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
+            min-height: 100vh;
+            display: flex;
             font-family: Arial, sans-serif;
-            text-align: center;
             background-color: black;
             color: white;
         }
 
-        h1 {
-            margin-top: 25px;
+        /* Barra lateral */
+
+        .barra-lateral {
+            width: 230px;
+            padding: 20px;
+            background-color: #111111;
+            border-right: 1px solid white;
         }
+
+        .barra-lateral h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        #nuevoBingo {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .bingo-guardado {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 10px;
+            border: 1px solid white;
+            border-radius: 12px;
+            background-color: black;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .bingo-guardado:hover {
+            background-color: #333333;
+        }
+
+        .bingo-guardado.activo {
+            background-color: #555555;
+        }
+
+        /* Zona principal */
+
+        main {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #tituloCompleto {
+            margin-top: 5px;
+        }
+
+        #tituloEditable {
+            display: inline-block;
+            min-width: 100px;
+            min-height: 35px;
+            vertical-align: middle;
+        }
+
+        #tituloEditable[contenteditable="true"] {
+            padding: 2px 6px;
+            outline: 2px solid white;
+            border-radius: 8px;
+            cursor: text;
+        }
+
+        /* Tablero */
 
         .bingo {
             display: grid;
             grid-template-columns: repeat(3, 170px);
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
             margin: 30px auto;
         }
 
         .casilla {
+            width: 170px;
             height: 170px;
             padding: 10px;
-            box-sizing: border-box;
 
             display: flex;
             align-items: center;
             justify-content: center;
 
             border: 2px solid white;
-            border-radius: 15px;
+            border-radius: 18px;
 
             background-color: black;
             color: white;
@@ -47,11 +115,20 @@
 
             cursor: pointer;
             user-select: none;
+            overflow-wrap: anywhere;
         }
 
         .casilla.marcada {
             background-color: green;
         }
+
+        .casilla[contenteditable="true"] {
+            outline: 3px solid white;
+            cursor: text;
+            user-select: text;
+        }
+
+        /* Botones */
 
         button {
             padding: 10px 20px;
@@ -67,14 +144,69 @@
             background-color: #333333;
         }
 
-        @media (max-width: 600px) {
+        /* Ventana de eliminación */
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal.oculto {
+            display: none;
+        }
+
+        .modal-contenido {
+            width: 320px;
+            padding: 25px;
+            background-color: black;
+            border: 2px solid white;
+            border-radius: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .modal-contenido h2 {
+            margin-top: 0;
+        }
+
+        .modal-botones {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .modal-botones button {
+            min-width: 90px;
+            border: 2px solid white;
+            border-radius: 15px;
+        }
+
+        /* Adaptación para móvil */
+
+        @media (max-width: 750px) {
+            body {
+                flex-direction: column;
+            }
+
+            .barra-lateral {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid white;
+            }
+
             .bingo {
-                grid-template-columns: repeat(3, 30vw);
+                grid-template-columns: repeat(3, 29vw);
             }
 
             .casilla {
-                width: 30vw;
-                height: 30vw;
+                width: 29vw;
+                height: 29vw;
                 font-size: 14px;
             }
         }
@@ -83,132 +215,421 @@
 
 <body>
 
-    <h1>
-    Bingo de <span id="tituloEditable"></span>
-    </h1>
+    <aside class="barra-lateral">
+        <h2>Mis bingos</h2>
 
-    <div class="bingo">
-        <div class="casilla">Texto 1</div>
-        <div class="casilla">Texto 2</div>
-        <div class="casilla">Texto 3</div>
+        <div id="listaBingos"></div>
 
-        <div class="casilla">Texto 4</div>
-        <div class="casilla">Texto 5</div>
-        <div class="casilla">Texto 6</div>
+        <button id="nuevoBingo" type="button">
+            Nuevo bingo
+        </button>
+    </aside>
 
-        <div class="casilla">Texto 7</div>
-        <div class="casilla">Texto 8</div>
-        <div class="casilla">Texto 9</div>
+    <main>
+        <h1 id="tituloCompleto">
+            Bingo de <span id="tituloEditable"></span>
+        </h1>
+
+        <div class="bingo">
+            <div class="casilla"></div>
+            <div class="casilla"></div>
+            <div class="casilla"></div>
+
+            <div class="casilla"></div>
+            <div class="casilla"></div>
+            <div class="casilla"></div>
+
+            <div class="casilla"></div>
+            <div class="casilla"></div>
+            <div class="casilla"></div>
+        </div>
+
+        <button id="reiniciar" type="button">
+            Reiniciar marcas
+        </button>
+    </main>
+
+    <div id="modalEliminar" class="modal oculto">
+        <div class="modal-contenido">
+            <h2>Eliminar bingo</h2>
+
+            <p id="textoModal">
+                ¿Quieres eliminar este bingo?
+            </p>
+
+            <div class="modal-botones">
+                <button id="confirmarEliminar" type="button">
+                    Sí
+                </button>
+
+                <button id="cancelarEliminar" type="button">
+                    No
+                </button>
+            </div>
+        </div>
     </div>
 
-    <button type="button" onclick="reiniciar()">Reiniciar marcas</button>
-
     <script>
-        const casillas = document.querySelectorAll(".casilla");
+        const CLAVE_GUARDADO = "listaBingos3x3";
 
-        const tituloEditable = document.getElementById("tituloEditable");
-        const tituloGuardado = localStorage.getItem("tituloBingo");
+        const casillas =
+            document.querySelectorAll(".casilla");
 
-        if (tituloGuardado !== null) {
-            tituloEditable.textContent = tituloGuardado;
+        const tituloCompleto =
+            document.getElementById("tituloCompleto");
+
+        const tituloEditable =
+            document.getElementById("tituloEditable");
+
+        const listaBingos =
+            document.getElementById("listaBingos");
+
+        const botonNuevo =
+            document.getElementById("nuevoBingo");
+
+        const botonReiniciar =
+            document.getElementById("reiniciar");
+
+        const modalEliminar =
+            document.getElementById("modalEliminar");
+
+        const textoModal =
+            document.getElementById("textoModal");
+
+        const botonConfirmarEliminar =
+            document.getElementById("confirmarEliminar");
+
+        const botonCancelarEliminar =
+            document.getElementById("cancelarEliminar");
+
+        let bingoPendienteEliminar = null;
+        let datos = cargarDatos();
+
+        function crearBingo() {
+            const celdas = [];
+            let indice;
+
+            for (indice = 0; indice < 9; indice++) {
+                celdas.push({
+                    texto: "Texto " + (indice + 1),
+                    marcada: false
+                });
+            }
+
+            return {
+                id: Date.now().toString() + Math.random().toString(),
+                titulo: "",
+                celdas: celdas
+            };
         }
 
-        tituloEditable.addEventListener("contextmenu", function(event) {
-            event.preventDefault();
-
-            tituloEditable.contentEditable = "true";
-            tituloEditable.focus();
-        });
-
-        tituloEditable.addEventListener("blur", function() {
-            tituloEditable.contentEditable = "false";
-
-            const texto = tituloEditable.textContent.trim();
-
-            tituloEditable.textContent = texto;
-            localStorage.setItem("tituloBingo", texto);
-        });
-
-        tituloEditable.addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                tituloEditable.blur();
-            }
-        });
-
-        casillas.forEach(function(casilla, indice) {
+        function cargarDatos() {
             const textoGuardado =
-                localStorage.getItem("bingoTexto" + indice);
-
-            const estadoGuardado =
-                localStorage.getItem("bingoMarcada" + indice);
+                localStorage.getItem(CLAVE_GUARDADO);
 
             if (textoGuardado !== null) {
-                casilla.textContent = textoGuardado;
-            }
+                try {
+                    const datosGuardados =
+                        JSON.parse(textoGuardado);
 
-            if (estadoGuardado === "true") {
-                casilla.classList.add("marcada");
-            }
-
-            // Clic izquierdo: marcar o desmarcar
-            casilla.addEventListener("click", function() {
-                if (!casilla.isContentEditable) {
-                    casilla.classList.toggle("marcada");
-
-                    localStorage.setItem(
-                        "bingoMarcada" + indice,
-                        casilla.classList.contains("marcada")
+                    if (
+                        datosGuardados.bingos &&
+                        datosGuardados.bingos.length > 0
+                    ) {
+                        return datosGuardados;
+                    }
+                } catch (error) {
+                    console.error(
+                        "No se pudieron cargar los bingos",
+                        error
                     );
                 }
-            });
+            }
 
-            // Clic derecho: editar directamente dentro de la casilla
-            casilla.addEventListener("contextmenu", function(event) {
-                event.preventDefault();
+            const primerBingo = crearBingo();
 
-                casilla.contentEditable = "true";
-                casilla.focus();
+            return {
+                bingoActivo: primerBingo.id,
+                bingos: [primerBingo]
+            };
+        }
 
-                const rango = document.createRange();
-                const seleccion = window.getSelection();
+        function guardarDatos() {
+            localStorage.setItem(
+                CLAVE_GUARDADO,
+                JSON.stringify(datos)
+            );
+        }
 
-                rango.selectNodeContents(casilla);
-                seleccion.removeAllRanges();
-                seleccion.addRange(rango);
-            });
-
-            // Guardar al hacer clic fuera
-            casilla.addEventListener("blur", function() {
-                casilla.contentEditable = "false";
-
-                const texto = casilla.textContent.trim();
-
-                if (texto !== "") {
-                    casilla.textContent = texto;
-                    localStorage.setItem("bingoTexto" + indice, texto);
-                }
-            });
-
-            // Guardar pulsando Enter
-            casilla.addEventListener("keydown", function(event) {
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    casilla.blur();
-                }
-            });
-        });
-
-        function reiniciar() {
-            casillas.forEach(function(casilla, indice) {
-                casilla.classList.remove("marcada");
-
-                localStorage.setItem(
-                    "bingoMarcada" + indice,
-                    "false"
-                );
+        function obtenerBingoActivo() {
+            return datos.bingos.find(function(bingo) {
+                return bingo.id === datos.bingoActivo;
             });
         }
+
+        function mostrarBingo() {
+            const bingo = obtenerBingoActivo();
+
+            if (bingo === undefined) {
+                return;
+            }
+
+            tituloEditable.textContent = bingo.titulo;
+
+            casillas.forEach(function(casilla, indice) {
+                casilla.textContent =
+                    bingo.celdas[indice].texto;
+
+                casilla.classList.toggle(
+                    "marcada",
+                    bingo.celdas[indice].marcada
+                );
+            });
+
+            mostrarLista();
+        }
+
+        function mostrarLista() {
+            listaBingos.innerHTML = "";
+
+            datos.bingos.forEach(function(bingo, indice) {
+                const boton =
+                    document.createElement("button");
+
+                boton.className = "bingo-guardado";
+
+                if (bingo.id === datos.bingoActivo) {
+                    boton.classList.add("activo");
+                }
+
+                if (bingo.titulo.trim() === "") {
+                    boton.textContent =
+                        "Bingo " + (indice + 1);
+                } else {
+                    boton.textContent =
+                        "Bingo de " + bingo.titulo;
+                }
+
+                /* Clic izquierdo: abrir bingo */
+
+                boton.addEventListener("click", function() {
+                    datos.bingoActivo = bingo.id;
+
+                    guardarDatos();
+                    mostrarBingo();
+                });
+
+                /* Clic derecho: preguntar si se elimina */
+
+                boton.addEventListener(
+                    "contextmenu",
+                    function(event) {
+                        event.preventDefault();
+
+                        bingoPendienteEliminar = bingo;
+
+                        if (bingo.titulo.trim() === "") {
+                            textoModal.textContent =
+                                "¿Quieres eliminar este bingo?";
+                        } else {
+                            textoModal.textContent =
+                                "¿Quieres eliminar el Bingo de " +
+                                bingo.titulo +
+                                "?";
+                        }
+
+                        modalEliminar.classList.remove("oculto");
+                    }
+                );
+
+                listaBingos.appendChild(boton);
+            });
+        }
+
+        function seleccionarTexto(elemento) {
+            const rango = document.createRange();
+            const seleccion = window.getSelection();
+
+            rango.selectNodeContents(elemento);
+            seleccion.removeAllRanges();
+            seleccion.addRange(rango);
+        }
+
+        /* Crear un bingo */
+
+        botonNuevo.addEventListener("click", function() {
+            const nuevoBingo = crearBingo();
+
+            datos.bingos.push(nuevoBingo);
+            datos.bingoActivo = nuevoBingo.id;
+
+            guardarDatos();
+            mostrarBingo();
+        });
+
+        /* Editar título con clic derecho */
+
+        tituloCompleto.addEventListener(
+            "contextmenu",
+            function(event) {
+                event.preventDefault();
+
+                tituloEditable.contentEditable = "true";
+                tituloEditable.focus();
+
+                seleccionarTexto(tituloEditable);
+            }
+        );
+
+        tituloEditable.addEventListener("blur", function() {
+            const bingo = obtenerBingoActivo();
+
+            tituloEditable.contentEditable = "false";
+
+            bingo.titulo =
+                tituloEditable.textContent.trim();
+
+            tituloEditable.textContent =
+                bingo.titulo;
+
+            guardarDatos();
+            mostrarLista();
+        });
+
+        tituloEditable.addEventListener(
+            "keydown",
+            function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    tituloEditable.blur();
+                }
+            }
+        );
+
+        /* Casillas */
+
+        casillas.forEach(function(casilla, indice) {
+
+            /* Clic izquierdo: marcar */
+
+            casilla.addEventListener("click", function() {
+                const bingo = obtenerBingoActivo();
+
+                if (!casilla.isContentEditable) {
+                    bingo.celdas[indice].marcada =
+                        !bingo.celdas[indice].marcada;
+
+                    guardarDatos();
+                    mostrarBingo();
+                }
+            });
+
+            /* Clic derecho: editar */
+
+            casilla.addEventListener(
+                "contextmenu",
+                function(event) {
+                    event.preventDefault();
+
+                    casilla.contentEditable = "true";
+                    casilla.focus();
+
+                    seleccionarTexto(casilla);
+                }
+            );
+
+            /* Guardar al salir de la casilla */
+
+            casilla.addEventListener("blur", function() {
+                const bingo = obtenerBingoActivo();
+
+                casilla.contentEditable = "false";
+
+                bingo.celdas[indice].texto =
+                    casilla.textContent.trim();
+
+                guardarDatos();
+            });
+
+            /* Guardar pulsando Enter */
+
+            casilla.addEventListener(
+                "keydown",
+                function(event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        casilla.blur();
+                    }
+                }
+            );
+        });
+
+        /* Reiniciar marcas */
+
+        botonReiniciar.addEventListener(
+            "click",
+            function() {
+                const bingo = obtenerBingoActivo();
+
+                bingo.celdas.forEach(function(celda) {
+                    celda.marcada = false;
+                });
+
+                guardarDatos();
+                mostrarBingo();
+            }
+        );
+
+        /* Cancelar eliminación */
+
+        botonCancelarEliminar.addEventListener(
+            "click",
+            function() {
+                bingoPendienteEliminar = null;
+                modalEliminar.classList.add("oculto");
+            }
+        );
+
+        /* Confirmar eliminación */
+
+        botonConfirmarEliminar.addEventListener(
+            "click",
+            function() {
+                if (bingoPendienteEliminar === null) {
+                    return;
+                }
+
+                datos.bingos = datos.bingos.filter(
+                    function(bingo) {
+                        return (
+                            bingo.id !==
+                            bingoPendienteEliminar.id
+                        );
+                    }
+                );
+
+                if (datos.bingos.length === 0) {
+                    const nuevoBingo = crearBingo();
+
+                    datos.bingos.push(nuevoBingo);
+                    datos.bingoActivo = nuevoBingo.id;
+                } else if (
+                    datos.bingoActivo ===
+                    bingoPendienteEliminar.id
+                ) {
+                    datos.bingoActivo =
+                        datos.bingos[0].id;
+                }
+
+                bingoPendienteEliminar = null;
+                modalEliminar.classList.add("oculto");
+
+                guardarDatos();
+                mostrarBingo();
+            }
+        );
+
+        mostrarBingo();
     </script>
 
 </body>
