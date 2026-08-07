@@ -113,24 +113,64 @@
             --columnas: 3;
             --filas: 3;
 
+            position: relative;
+            z-index: 0;
+            isolation: isolate;
+
             display: inline-grid;
             grid-template-columns: auto var(--ancho-aviso);
-            grid-template-rows: auto auto auto auto;
+            grid-template-rows: auto auto auto auto auto;
             column-gap: 18px;
             row-gap: 14px;
             align-items: start;
             margin: 20px auto 10px;
         }
 
-        /* Sin líneas, solo se tiene en cuenta el tablero para centrarlo. */
+        /*
+           Sin líneas el tablero sigue centrado, pero dejamos reservada desde
+           el principio la fila inferior donde aparecerá una LÍNEA vertical.
+           Así el botón Reiniciar marcas no salta hacia abajo al hacer línea.
+        */
         .zona-bingo.sin-lineas {
             grid-template-columns: auto;
-            grid-template-rows: auto auto auto;
+            grid-template-rows: auto auto auto auto auto;
         }
 
-        .zona-bingo.sin-lineas .avisos-horizontales,
-        .zona-bingo.sin-lineas .avisos-verticales {
+        .zona-bingo.sin-lineas .avisos-horizontales {
             display: none;
+        }
+
+        .zona-bingo.sin-lineas .avisos-verticales {
+            display: grid;
+        }
+
+        /* Si solo hay líneas verticales no hace falta reservar espacio a la derecha. */
+        .zona-bingo.sin-lineas-horizontales {
+            grid-template-columns: auto;
+        }
+
+        .zona-bingo.sin-lineas-horizontales .avisos-horizontales {
+            display: none;
+        }
+
+        /*
+           Si todavía no hay ningún aviso a la derecha, el contenedor de
+           diagonales no debe crear una segunda columna invisible. Así una
+           VERTICAL, o un bingo sin líneas, no desplaza las casillas.
+        */
+        .zona-bingo.sin-lineas .avisos-diagonales,
+        .zona-bingo.sin-lineas-horizontales .avisos-diagonales {
+            grid-column: 1;
+        }
+
+        /*
+           Cuando el aviso horizontal o diagonal cabe manteniendo el tablero centrado,
+           compensamos el ancho de la columna de avisos. Si no cabe, esta clase
+           no se aplica y el conjunto se centra como antes, desplazando las
+           casillas a la izquierda solo lo necesario para que se vea LÍNEA.
+        */
+        .zona-bingo.lineas-centradas {
+            transform: translateX(calc((var(--ancho-aviso) + 18px) / 2));
         }
 
         .bingo {
@@ -190,17 +230,87 @@
             align-items: start;
         }
 
+        .avisos-diagonales {
+            grid-column: 1 / 3;
+            grid-row: 2 / 4;
+            position: relative;
+            display: none;
+            justify-self: stretch;
+            align-self: stretch;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .zona-bingo.permite-diagonales .avisos-diagonales {
+            display: block;
+        }
+
+        /*
+           Orden de capas:
+           1 = conectores amarillos de las diagonales
+           2 = casillas, LINEA, VERTICAL, titulo y boton
+           4 = cartel DIAGONAL
+        */
+        .bingo,
+        .avisos-horizontales,
+        .avisos-verticales,
+        #tituloCompleto,
+        #reiniciar {
+            position: relative;
+            z-index: 2;
+        }
+
+        .aviso-linea.diagonal {
+            z-index: 4;
+        }
+
+        .linea-diagonal-conector {
+            position: absolute;
+            left: calc(
+                (var(--columnas) * var(--tamano-casilla)) +
+                ((var(--columnas) - 1) * var(--separacion)) +
+                15px
+            );
+            width: 55px;
+            height: 4px;
+            background: linear-gradient(90deg, #ffffff, #ffe75c);
+            box-shadow: 0 0 10px #ffe75c;
+            transform-origin: right center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .linea-diagonal-conector.principal {
+            top: calc(
+                (var(--filas) * var(--tamano-casilla)) +
+                ((var(--filas) - 1) * var(--separacion)) +
+                35px
+            );
+            transform: translateX(-100%) rotate(65deg);
+        }
+
+        .linea-diagonal-conector.secundaria {
+            top: -36px;
+            transform: translateX(-100%) rotate(-60deg);
+        }
+
+        .linea-diagonal-conector.activa {
+            opacity: 1;
+            visibility: visible;
+        }
 
         #reiniciar {
             grid-column: 1;
-            grid-row: 4;
+            grid-row: 5;
             justify-self: center;
             margin-top: 2px;
         }
 
         .zona-bingo.sin-lineas #reiniciar {
             grid-column: 1;
-            grid-row: 3;
+            grid-row: 5;
         }
 
         .aviso-linea {
@@ -261,6 +371,46 @@
             box-shadow: 0 0 10px #ffe75c;
         }
 
+        .aviso-linea.vertical {
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            padding-left: 9px;
+            padding-right: 9px;
+        }
+
+        .aviso-linea.diagonal {
+            min-width: 145px;
+            font-size: 15px;
+            letter-spacing: 1.5px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .avisos-diagonales .aviso-linea.diagonal {
+            position: absolute;
+            left: calc(
+                (var(--columnas) * var(--tamano-casilla)) +
+                ((var(--columnas) - 1) * var(--separacion)) +
+                15px
+            );
+        }
+
+        .avisos-diagonales .aviso-linea.diagonal[data-linea="diagonal-principal"] {
+            top: calc(
+                (var(--filas) * var(--tamano-casilla)) +
+                ((var(--filas) - 1) * var(--separacion)) +
+                15px
+            );
+        }
+
+        .avisos-diagonales .aviso-linea.diagonal[data-linea="diagonal-secundaria"] {
+            top: -58px;
+        }
+
+        .aviso-linea.diagonal::before {
+            content: none;
+        }
+
         .aviso-linea.activa {
             opacity: 1;
             visibility: visible;
@@ -291,7 +441,8 @@
             }
         }
 
-        .aviso-linea.vertical.nueva {
+        .aviso-linea.vertical.nueva,
+        .aviso-linea.diagonal.nueva {
             animation:
                 entradaLineaVertical 700ms cubic-bezier(0.2, 1.65, 0.35, 1) both,
                 brilloLinea 1200ms ease-out 150ms;
@@ -670,6 +821,68 @@
             font-size: 13px;
         }
 
+
+        .opcion-regla {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: fit-content;
+            margin: 18px auto 0;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .opcion-regla input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .check-regla {
+            width: 24px;
+            height: 24px;
+            flex: 0 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            border-radius: 7px;
+            background: black;
+        }
+
+        .opcion-regla input:checked + .check-regla::after {
+            content: "";
+            width: 11px;
+            height: 6px;
+            border-left: 3px solid white;
+            border-bottom: 3px solid white;
+            transform: translateY(-1px) rotate(-45deg);
+        }
+
+        .opcion-regla:hover .check-regla {
+            background: #1f1f1f;
+        }
+
+        .opcion-regla.deshabilitada {
+            color: #777777;
+            cursor: not-allowed;
+        }
+
+        .opcion-regla.deshabilitada .check-regla {
+            border-color: #666666;
+            background: #151515;
+        }
+
+        .ayuda-regla {
+            min-height: 18px;
+            margin: 7px 0 0;
+            color: #bdbdbd;
+            font-size: 12px;
+        }
+
         .error-modal {
             min-height: 20px;
             margin: 10px 0 0;
@@ -734,8 +947,41 @@
                 width: 10px;
             }
 
+            .aviso-linea.vertical {
+                font-size: 10px;
+                letter-spacing: 0.3px;
+                padding-left: 2px;
+                padding-right: 2px;
+            }
+
             .aviso-linea.vertical::before {
                 height: 10px;
+            }
+
+            .aviso-linea.diagonal {
+                min-width: 0;
+                width: 92px;
+                font-size: 9px;
+                letter-spacing: 0.5px;
+                padding-left: 3px;
+                padding-right: 3px;
+            }
+
+            .linea-diagonal-conector {
+                width: 18px;
+                height: 3px;
+            }
+
+            .linea-diagonal-conector.principal {
+                top: calc(
+                    (var(--filas) * var(--tamano-casilla)) +
+                    ((var(--filas) - 1) * var(--separacion)) +
+                    24px
+                );
+            }
+
+            .linea-diagonal-conector.secundaria {
+                top: -32px;
             }
         }
     </style>
@@ -763,6 +1009,7 @@
                 <div class="bingo" id="tableroBingo"></div>
                 <div id="avisosHorizontales" class="avisos-horizontales" aria-hidden="true"></div>
                 <div id="avisosVerticales" class="avisos-verticales" aria-hidden="true"></div>
+                <div id="avisosDiagonales" class="avisos-diagonales" aria-hidden="true"></div>
 
                 <button id="reiniciar" type="button">
                     Reiniciar marcas
@@ -821,6 +1068,13 @@
             </div>
 
             <p class="ayuda-tamano">Valores permitidos: de 2 a 10.</p>
+
+            <label id="opcionDiagonales" class="opcion-regla" for="permitirDiagonales">
+                <input id="permitirDiagonales" type="checkbox">
+                <span class="check-regla" aria-hidden="true"></span>
+                <span>Permitir diagonales</span>
+            </label>
+
             <p id="errorCrear" class="error-modal"></p>
 
             <div class="modal-botones">
@@ -854,6 +1108,7 @@
         const tableroBingo = document.getElementById("tableroBingo");
         const avisosHorizontales = document.getElementById("avisosHorizontales");
         const avisosVerticales = document.getElementById("avisosVerticales");
+        const avisosDiagonales = document.getElementById("avisosDiagonales");
 
         const tituloCompleto = document.getElementById("tituloCompleto");
         const tituloEditable = document.getElementById("tituloEditable");
@@ -864,6 +1119,8 @@
         const modalCrear = document.getElementById("modalCrear");
         const numeroColumnas = document.getElementById("numeroColumnas");
         const numeroFilas = document.getElementById("numeroFilas");
+        const permitirDiagonales = document.getElementById("permitirDiagonales");
+        const opcionDiagonales = document.getElementById("opcionDiagonales");
         const errorCrear = document.getElementById("errorCrear");
         const botonConfirmarCrear = document.getElementById("confirmarCrear");
         const botonCancelarCrear = document.getElementById("cancelarCrear");
@@ -879,9 +1136,14 @@
 
         let temporizadorBingo = null;
         let bingoPendienteEliminar = null;
+        let estadoDiagonalesPreferido = false;
         let datos = cargarDatos();
 
-        function crearBingo(columnas = 3, filas = 3) {
+        function crearBingo(
+            columnas = 3,
+            filas = 3,
+            contarDiagonales = false
+        ) {
             const celdas = [];
             const cantidad = columnas * filas;
 
@@ -897,6 +1159,7 @@
                 titulo: "",
                 columnas: columnas,
                 filas: filas,
+                permitirDiagonales: Boolean(contarDiagonales && columnas === filas),
                 celdas: celdas
             };
         }
@@ -908,6 +1171,14 @@
 
             bingo.columnas = columnas;
             bingo.filas = filas;
+
+            if (typeof bingo.permitirDiagonales !== "boolean") {
+                bingo.permitirDiagonales = false;
+            }
+
+            if (columnas !== filas) {
+                bingo.permitirDiagonales = false;
+            }
 
             if (!Array.isArray(bingo.celdas)) {
                 bingo.celdas = [];
@@ -963,7 +1234,7 @@
                 }
             }
 
-            const primerBingo = crearBingo(3, 3);
+            const primerBingo = crearBingo(3, 3, false);
 
             return {
                 bingoActivo: primerBingo.id,
@@ -1018,6 +1289,33 @@
                 }
             }
 
+            if (bingo.permitirDiagonales && bingo.columnas === bingo.filas) {
+                let diagonalPrincipal = true;
+                let diagonalSecundaria = true;
+
+                for (let indice = 0; indice < bingo.columnas; indice++) {
+                    const principal = indice * bingo.columnas + indice;
+                    const secundaria =
+                        indice * bingo.columnas + (bingo.columnas - 1 - indice);
+
+                    if (!bingo.celdas[principal].marcada) {
+                        diagonalPrincipal = false;
+                    }
+
+                    if (!bingo.celdas[secundaria].marcada) {
+                        diagonalSecundaria = false;
+                    }
+                }
+
+                if (diagonalPrincipal) {
+                    lineas.push("diagonal-principal");
+                }
+
+                if (diagonalSecundaria) {
+                    lineas.push("diagonal-secundaria");
+                }
+            }
+
             return lineas;
         }
 
@@ -1041,14 +1339,109 @@
             return Math.max(80, Math.min(170, tamanoCalculado));
         }
 
+        function actualizarPosicionZonaBingo(bingo, lineasCompletas) {
+            const tieneLineas = lineasCompletas.length > 0;
+            const tieneLineaHorizontal = lineasCompletas.some(function(idLinea) {
+                return idLinea.startsWith("fila-");
+            });
+            const tieneDiagonal = lineasCompletas.some(function(idLinea) {
+                return idLinea.startsWith("diagonal-");
+            });
+            const tieneAvisoDerecha = tieneLineaHorizontal || tieneDiagonal;
+
+            zonaBingo.classList.toggle("sin-lineas", !tieneLineas);
+            zonaBingo.classList.toggle(
+                "sin-lineas-horizontales",
+                tieneLineas && !tieneAvisoDerecha
+            );
+            zonaBingo.classList.remove("lineas-centradas");
+
+            /*
+               Una VERTICAL solo ocupa espacio debajo del tablero, por lo que
+               nunca necesita moverlo a izquierda o derecha.
+            */
+            if (!tieneAvisoDerecha) {
+                return;
+            }
+
+            const estilosZona = getComputedStyle(zonaBingo);
+            const tableroScroll = document.querySelector(".tablero-scroll");
+            const estilosScroll = getComputedStyle(tableroScroll);
+
+            const tamanoCasilla = parseFloat(
+                estilosZona.getPropertyValue("--tamano-casilla")
+            );
+            const separacion = parseFloat(
+                estilosZona.getPropertyValue("--separacion")
+            );
+            const anchoAviso = parseFloat(
+                estilosZona.getPropertyValue("--ancho-aviso")
+            );
+            const separacionAviso = parseFloat(estilosZona.columnGap) || 18;
+
+            const anchoTablero =
+                bingo.columnas * tamanoCasilla +
+                (bingo.columnas - 1) * separacion;
+
+            const anchoDisponible =
+                tableroScroll.clientWidth -
+                parseFloat(estilosScroll.paddingLeft) -
+                parseFloat(estilosScroll.paddingRight);
+
+            /*
+               Espacio real que puede necesitar un cartel a la derecha.
+               LÍNEA usa la segunda columna del grid.
+               DIAGONAL empieza 15 px después del borde del tablero y su cartel
+               tiene 145 px de ancho mínimo.
+            */
+            let espacioDerechaNecesario = 0;
+
+            if (tieneLineaHorizontal) {
+                espacioDerechaNecesario = Math.max(
+                    espacioDerechaNecesario,
+                    separacionAviso + anchoAviso
+                );
+            }
+
+            if (tieneDiagonal) {
+                espacioDerechaNecesario = Math.max(
+                    espacioDerechaNecesario,
+                    15 + 145
+                );
+            }
+
+            /*
+               Para mantener EXACTAMENTE el mismo centro de las casillas hace
+               falta ese mismo espacio libre también al lado izquierdo.
+               Si cabe, compensamos la columna de avisos y el tablero no se mueve.
+               Solo si no cabe se deja que el conjunto se desplace a la izquierda.
+            */
+            const anchoNecesarioParaNoMover =
+                anchoTablero + (2 * espacioDerechaNecesario);
+
+            zonaBingo.classList.toggle(
+                "lineas-centradas",
+                anchoNecesarioParaNoMover <= anchoDisponible
+            );
+        }
+
         function crearAvisoLinea(tipo, indice, activa, nueva) {
             const aviso = document.createElement("div");
 
             aviso.className = "aviso-linea " + tipo;
-            aviso.textContent = "LÍNEA";
-            aviso.dataset.linea = tipo === "horizontal"
-                ? "fila-" + indice
-                : "columna-" + indice;
+
+            if (tipo === "horizontal") {
+                aviso.textContent = "LÍNEA";
+                aviso.dataset.linea = "fila-" + indice;
+            } else if (tipo === "vertical") {
+                aviso.textContent = "VERTICAL";
+                aviso.dataset.linea = "columna-" + indice;
+            } else {
+                aviso.textContent = "DIAGONAL";
+                aviso.dataset.linea = indice === 0
+                    ? "diagonal-principal"
+                    : "diagonal-secundaria";
+            }
 
             if (activa) {
                 aviso.classList.add("activa");
@@ -1078,6 +1471,12 @@
             tableroBingo.innerHTML = "";
             avisosHorizontales.innerHTML = "";
             avisosVerticales.innerHTML = "";
+            avisosDiagonales.innerHTML = "";
+
+            zonaBingo.classList.toggle(
+                "permite-diagonales",
+                bingo.permitirDiagonales && bingo.columnas === bingo.filas
+            );
 
             bingo.celdas.forEach(function(celda, indice) {
                 const casilla = document.createElement("div");
@@ -1092,10 +1491,7 @@
 
             const lineasCompletas = obtenerLineasCompletas(bingo);
 
-            zonaBingo.classList.toggle(
-                "sin-lineas",
-                lineasCompletas.length === 0
-            );
+            actualizarPosicionZonaBingo(bingo, lineasCompletas);
 
             for (let fila = 0; fila < bingo.filas; fila++) {
                 const id = "fila-" + fila;
@@ -1120,6 +1516,33 @@
                         lineasCompletas.includes(id),
                         lineasNuevas.includes(id)
                     )
+                );
+            }
+
+            if (bingo.permitirDiagonales && bingo.columnas === bingo.filas) {
+                ["diagonal-principal", "diagonal-secundaria"].forEach(
+                    function(id, indice) {
+                        const conector = document.createElement("div");
+
+                        conector.className =
+                            "linea-diagonal-conector " +
+                            (indice === 0 ? "principal" : "secundaria");
+
+                        if (lineasCompletas.includes(id)) {
+                            conector.classList.add("activa");
+                        }
+
+                        avisosDiagonales.appendChild(conector);
+
+                        avisosDiagonales.appendChild(
+                            crearAvisoLinea(
+                                "diagonal",
+                                indice,
+                                lineasCompletas.includes(id),
+                                lineasNuevas.includes(id)
+                            )
+                        );
+                    }
                 );
             }
 
@@ -1217,14 +1640,41 @@
             }
 
             input.value = valor;
+            actualizarEstadoOpciones();
             input.focus();
             input.select();
+        }
+
+        function actualizarEstadoOpciones() {
+            const columnas = Number(numeroColumnas.value);
+            const filas = Number(numeroFilas.value);
+            const dimensionesIguales =
+                Number.isInteger(columnas) &&
+                Number.isInteger(filas) &&
+                columnas === filas;
+
+            if (!dimensionesIguales) {
+                if (!permitirDiagonales.disabled) {
+                    estadoDiagonalesPreferido = permitirDiagonales.checked;
+                }
+
+                permitirDiagonales.checked = false;
+                permitirDiagonales.disabled = true;
+                opcionDiagonales.classList.add("deshabilitada");
+            } else {
+                permitirDiagonales.disabled = false;
+                permitirDiagonales.checked = estadoDiagonalesPreferido;
+                opcionDiagonales.classList.remove("deshabilitada");
+            }
         }
 
         function abrirModalCrear() {
             numeroColumnas.value = 3;
             numeroFilas.value = 3;
+            estadoDiagonalesPreferido = false;
+            permitirDiagonales.checked = false;
             errorCrear.textContent = "";
+            actualizarEstadoOpciones();
             modalCrear.classList.remove("oculto");
             numeroColumnas.focus();
             numeroColumnas.select();
@@ -1251,7 +1701,11 @@
                 return;
             }
 
-            const nuevoBingo = crearBingo(columnas, filas);
+            const nuevoBingo = crearBingo(
+                columnas,
+                filas,
+                permitirDiagonales.checked
+            );
 
             datos.bingos.push(nuevoBingo);
             datos.bingoActivo = nuevoBingo.id;
@@ -1312,13 +1766,23 @@
             });
         });
 
+        permitirDiagonales.addEventListener("change", function() {
+            if (!permitirDiagonales.disabled) {
+                estadoDiagonalesPreferido = permitirDiagonales.checked;
+            }
+        });
+
         [numeroColumnas, numeroFilas].forEach(function(input) {
+            input.addEventListener("input", actualizarEstadoOpciones);
+
             input.addEventListener("blur", function() {
                 ajustarValorTamano(input);
+                actualizarEstadoOpciones();
             });
 
             input.addEventListener("change", function() {
                 ajustarValorTamano(input);
+                actualizarEstadoOpciones();
             });
         });
 
@@ -1460,7 +1924,7 @@
             });
 
             if (datos.bingos.length === 0) {
-                const nuevoBingo = crearBingo(3, 3);
+                const nuevoBingo = crearBingo(3, 3, false);
 
                 datos.bingos.push(nuevoBingo);
                 datos.bingoActivo = nuevoBingo.id;
@@ -1482,6 +1946,11 @@
                 zonaBingo.style.setProperty(
                     "--tamano-casilla",
                     calcularTamanoCasilla(bingo) + "px"
+                );
+
+                actualizarPosicionZonaBingo(
+                    bingo,
+                    obtenerLineasCompletas(bingo)
                 );
             }
         });
