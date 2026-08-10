@@ -892,6 +892,7 @@
 
         .modal-botones {
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
             gap: 15px;
             margin-top: 20px;
@@ -1084,6 +1085,22 @@
         </div>
     </div>
 
+    <div id="modalAccionesBingo" class="modal oculto">
+        <div class="modal-contenido">
+            <h2>Opciones del bingo</h2>
+
+            <p id="textoAccionesBingo">
+                ¿Qué quieres hacer con este bingo?
+            </p>
+
+            <div class="modal-botones">
+                <button id="editarBingo" type="button">Editar</button>
+                <button id="eliminarBingo" type="button">Eliminar</button>
+                <button id="cerrarAccionesBingo" type="button">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalEliminar" class="modal oculto">
         <div class="modal-contenido">
             <h2>Eliminar bingo</h2>
@@ -1117,6 +1134,7 @@
         const botonReiniciar = document.getElementById("reiniciar");
 
         const modalCrear = document.getElementById("modalCrear");
+        const tituloModalCrear = modalCrear.querySelector("h2");
         const numeroColumnas = document.getElementById("numeroColumnas");
         const numeroFilas = document.getElementById("numeroFilas");
         const permitirDiagonales = document.getElementById("permitirDiagonales");
@@ -1125,6 +1143,12 @@
         const botonConfirmarCrear = document.getElementById("confirmarCrear");
         const botonCancelarCrear = document.getElementById("cancelarCrear");
         const botonesSpinner = document.querySelectorAll(".spinner-boton");
+
+        const modalAccionesBingo = document.getElementById("modalAccionesBingo");
+        const textoAccionesBingo = document.getElementById("textoAccionesBingo");
+        const botonEditarBingo = document.getElementById("editarBingo");
+        const botonEliminarBingo = document.getElementById("eliminarBingo");
+        const botonCerrarAccionesBingo = document.getElementById("cerrarAccionesBingo");
 
         const modalEliminar = document.getElementById("modalEliminar");
         const textoModal = document.getElementById("textoModal");
@@ -1135,7 +1159,9 @@
         const confetiBingo = document.getElementById("confetiBingo");
 
         let temporizadorBingo = null;
+        let bingoPendienteAccion = null;
         let bingoPendienteEliminar = null;
+        let bingoPendienteEditar = null;
         let estadoDiagonalesPreferido = false;
         let datos = cargarDatos();
 
@@ -1549,6 +1575,60 @@
             mostrarLista();
         }
 
+        function redimensionarBingo(bingo, nuevasColumnas, nuevasFilas, permitirDiagonalesNuevo) {
+            const columnasAnteriores = bingo.columnas;
+            const filasAnteriores = bingo.filas;
+            const celdasAnteriores = bingo.celdas;
+            const nuevasCeldas = [];
+
+            for (let fila = 0; fila < nuevasFilas; fila++) {
+                for (let columna = 0; columna < nuevasColumnas; columna++) {
+                    const nuevoIndice = fila * nuevasColumnas + columna;
+
+                    if (fila < filasAnteriores && columna < columnasAnteriores) {
+                        const indiceAnterior = fila * columnasAnteriores + columna;
+                        const celdaAnterior = celdasAnteriores[indiceAnterior];
+
+                        nuevasCeldas.push({
+                            texto: celdaAnterior.texto,
+                            marcada: celdaAnterior.marcada
+                        });
+                    } else {
+                        nuevasCeldas.push({
+                            texto: "Texto " + (nuevoIndice + 1),
+                            marcada: false
+                        });
+                    }
+                }
+            }
+
+            bingo.columnas = nuevasColumnas;
+            bingo.filas = nuevasFilas;
+            bingo.celdas = nuevasCeldas;
+            bingo.permitirDiagonales = Boolean(
+                permitirDiagonalesNuevo && nuevasColumnas === nuevasFilas
+            );
+        }
+
+        function abrirOpcionesBingo(bingo) {
+            bingoPendienteAccion = bingo;
+            datos.bingoActivo = bingo.id;
+
+            guardarDatos();
+            mostrarBingo();
+
+            textoAccionesBingo.textContent = bingo.titulo.trim() === ""
+                ? "¿Qué quieres hacer con este bingo?"
+                : "¿Qué quieres hacer con el Bingo de " + bingo.titulo + "?";
+
+            modalAccionesBingo.classList.remove("oculto");
+        }
+
+        function cerrarOpcionesBingo() {
+            bingoPendienteAccion = null;
+            modalAccionesBingo.classList.add("oculto");
+        }
+
         function mostrarLista() {
             listaBingos.innerHTML = "";
 
@@ -1574,20 +1654,12 @@
                 boton.appendChild(dimensiones);
 
                 boton.addEventListener("click", function() {
-                    datos.bingoActivo = bingo.id;
-                    guardarDatos();
-                    mostrarBingo();
+                    abrirOpcionesBingo(bingo);
                 });
 
                 boton.addEventListener("contextmenu", function(event) {
                     event.preventDefault();
-                    bingoPendienteEliminar = bingo;
-
-                    textoModal.textContent = bingo.titulo.trim() === ""
-                        ? "¿Quieres eliminar este bingo?"
-                        : "¿Quieres eliminar el Bingo de " + bingo.titulo + "?";
-
-                    modalEliminar.classList.remove("oculto");
+                    abrirOpcionesBingo(bingo);
                 });
 
                 listaBingos.appendChild(boton);
@@ -1669,6 +1741,9 @@
         }
 
         function abrirModalCrear() {
+            bingoPendienteEditar = null;
+            tituloModalCrear.textContent = "Crear nuevo bingo";
+            botonConfirmarCrear.textContent = "Crear";
             numeroColumnas.value = 3;
             numeroFilas.value = 3;
             estadoDiagonalesPreferido = false;
@@ -1680,9 +1755,25 @@
             numeroColumnas.select();
         }
 
+        function abrirModalEditar(bingo) {
+            bingoPendienteEditar = bingo;
+            tituloModalCrear.textContent = "Editar bingo";
+            botonConfirmarCrear.textContent = "Guardar";
+            numeroColumnas.value = bingo.columnas;
+            numeroFilas.value = bingo.filas;
+            estadoDiagonalesPreferido = Boolean(bingo.permitirDiagonales);
+            permitirDiagonales.checked = estadoDiagonalesPreferido;
+            errorCrear.textContent = "";
+            actualizarEstadoOpciones();
+            modalCrear.classList.remove("oculto");
+            numeroColumnas.focus();
+            numeroColumnas.select();
+        }
+
         function cerrarModalCrear() {
             modalCrear.classList.add("oculto");
             errorCrear.textContent = "";
+            bingoPendienteEditar = null;
         }
 
         function confirmarCreacion() {
@@ -1698,6 +1789,25 @@
                 filas > TAMANO_MAXIMO
             ) {
                 errorCrear.textContent = "Introduce valores enteros entre 2 y 10.";
+                return;
+            }
+
+            if (bingoPendienteEditar !== null) {
+                const bingoEditado = bingoPendienteEditar;
+
+                redimensionarBingo(
+                    bingoEditado,
+                    columnas,
+                    filas,
+                    permitirDiagonales.checked
+                );
+
+                datos.bingoActivo = bingoEditado.id;
+                bingoPendienteEditar = null;
+
+                cerrarModalCrear();
+                guardarDatos();
+                mostrarBingo();
                 return;
             }
 
@@ -1784,6 +1894,39 @@
                 ajustarValorTamano(input);
                 actualizarEstadoOpciones();
             });
+        });
+
+        botonEditarBingo.addEventListener("click", function() {
+            if (bingoPendienteAccion === null) {
+                return;
+            }
+
+            const bingo = bingoPendienteAccion;
+            cerrarOpcionesBingo();
+            abrirModalEditar(bingo);
+        });
+
+        botonEliminarBingo.addEventListener("click", function() {
+            if (bingoPendienteAccion === null) {
+                return;
+            }
+
+            bingoPendienteEliminar = bingoPendienteAccion;
+            cerrarOpcionesBingo();
+
+            textoModal.textContent = bingoPendienteEliminar.titulo.trim() === ""
+                ? "¿Quieres eliminar este bingo?"
+                : "¿Quieres eliminar el Bingo de " + bingoPendienteEliminar.titulo + "?";
+
+            modalEliminar.classList.remove("oculto");
+        });
+
+        botonCerrarAccionesBingo.addEventListener("click", cerrarOpcionesBingo);
+
+        modalAccionesBingo.addEventListener("click", function(event) {
+            if (event.target === modalAccionesBingo) {
+                cerrarOpcionesBingo();
+            }
         });
 
         botonNuevo.addEventListener("click", abrirModalCrear);
@@ -1914,6 +2057,13 @@
             modalEliminar.classList.add("oculto");
         });
 
+        modalEliminar.addEventListener("click", function(event) {
+            if (event.target === modalEliminar) {
+                bingoPendienteEliminar = null;
+                modalEliminar.classList.add("oculto");
+            }
+        });
+
         botonConfirmarEliminar.addEventListener("click", function() {
             if (bingoPendienteEliminar === null) {
                 return;
@@ -1932,6 +2082,7 @@
                 datos.bingoActivo = datos.bingos[0].id;
             }
 
+            bingoPendienteAccion = null;
             bingoPendienteEliminar = null;
             modalEliminar.classList.add("oculto");
 
