@@ -1654,7 +1654,9 @@
                 boton.appendChild(dimensiones);
 
                 boton.addEventListener("click", function() {
-                    abrirOpcionesBingo(bingo);
+                    datos.bingoActivo = bingo.id;
+                    guardarDatos();
+                    mostrarBingo();
                 });
 
                 boton.addEventListener("contextmenu", function(event) {
